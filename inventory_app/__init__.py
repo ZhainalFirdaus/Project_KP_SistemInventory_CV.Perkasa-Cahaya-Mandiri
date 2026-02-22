@@ -11,8 +11,12 @@ def create_app():
                 template_folder='../templates')
     
     # Configuration from .env
+    db_url = os.getenv('DATABASE_URL')
+    if db_url and db_url.startswith("mysql://"):
+        db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
+        
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_fallback_key_for_dev')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '../' + os.getenv('UPLOAD_FOLDER', 'static/uploads'))
     
