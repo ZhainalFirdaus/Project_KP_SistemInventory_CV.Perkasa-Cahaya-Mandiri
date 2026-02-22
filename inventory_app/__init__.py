@@ -13,6 +13,9 @@ def create_app():
     # Configuration from .env
     db_url = os.getenv('DATABASE_URL')
     
+    # DEBUG: Print all environment variable names to help identify the correct DB URL one
+    print(f"DEBUG: Available env vars: {list(os.environ.keys())}")
+    
     if not db_url:
         print("CRITICAL ERROR: DATABASE_URL not found in environment variables!")
         # Fallback to a dummy or local sqlite just to prevent crash, 
