@@ -12,6 +12,13 @@ def create_app():
     
     # Configuration from .env
     db_url = os.getenv('DATABASE_URL')
+    
+    if not db_url:
+        print("CRITICAL ERROR: DATABASE_URL not found in environment variables!")
+        # Fallback to a dummy or local sqlite just to prevent crash, 
+        # but the app won't work correctly without MySQL.
+        db_url = "sqlite:///fallback.db" 
+
     if db_url and db_url.startswith("mysql://"):
         db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
         
