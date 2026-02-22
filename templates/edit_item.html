@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block header_title %}
+<div class="flex flex-col">
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+        <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-home"></i></a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ url_for('items.items_list') }}">Inventory</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-white">Edit Master & Stok</span>
+    </div>
+    <span class="text-2xl font-bold text-white">Edit: {{ item.name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-6">
+    <form method="POST" action="" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Column: Master Data & Setting -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Master Data Card -->
+                <div class="bg-[#1f2937] rounded-xl shadow-xl border border-gray-700 p-6">
+                    <div class="flex items-center gap-2 mb-4 text-blue-400">
+                        <i class="fa-solid fa-layer-group text-lg"></i>
+                        <h3 class="text-lg font-bold text-white">Master Data Barang</h3>
+                    </div>
+                    <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+                        <!-- Nama Barang (Read-Only) -->
+                        <div>
+                            <label class="block text-gray-300 text-sm font-bold mb-2">Nama Barang</label>
+                            <input type="text" name="name" value="{{ item.name }}" readonly
+                                class="w-full bg-[#111827] text-gray-400 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none cursor-not-allowed">
+                            <p class="text-xs text-gray-500 mt-1">Nama barang tidak dapat diubah (Master Key).</p>
+                        </div>
+
+                        <!-- Kategori -->
+                        <div>
+                            <label class="block text-gray-300 text-sm font-bold mb-2" for="category">Kategori</label>
+                            <div class="relative">
+                                <select name="category" id="category"
+                                    class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-blue-500 transition cursor-pointer">
+                                    <option value="Lighting" {{ 'selected' if item.category=='Lighting' else '' }}>
+                                        Lighting</option>
+                                    <option value="Audio" {{ 'selected' if item.category=='Audio' else '' }}>Audio
+                                    </option>
+                                    <option value="Multimedia" {{ 'selected' if item.category=='Multimedia' or
+                                        item.category=='Multimedia System' else '' }}>Multimedia</option>
+                                    <option value="Stage Production" {{ 'selected' if item.category=='Stage Production'
+                                        else '' }}>Stage Production</option>
+                                    <option value="Power Generator" {{ 'selected' if item.category=='Power Generator'
+                                        else '' }}>Power Generator</option>
+                                </select>
+                                <i
+                                    class="fa-solid fa-chevron-down text-xs text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            </div>
+                            <p class="text-xs text-orange-400 mt-2"><i class="fa-solid fa-triangle-exclamation"></i>
+                                Mengubah kategori akan memperbarui prefix SN seluruh unit (A/B/C).</p>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="md:col-span-1">
+                            <label class="block text-gray-300 text-sm font-bold mb-2">Foto Barang</label>
+                            <div class="flex gap-6 items-start">
+                                <!-- Current Image -->
+                                <div
+                                    class="w-24 h-24 bg-gray-800 rounded-lg overflow-hidden border border-gray-600 flex-shrink-0">
+                                    {% if item.image_file and item.image_file != 'default.jpg' %}
+                                    <img src="{{ url_for('static', filename='uploads/' + item.image_file) }}"
+                                        class="w-full h-full object-cover">
+                                    {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-600">
+                                        <i class="fa-solid fa-image text-2xl"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Upload Box -->
+                                <div
+                                    class="flex-1 relative border-2 border-dashed border-gray-600 rounded-lg h-24 flex flex-col items-center justify-center text-center p-2 hover:border-blue-500 hover:bg-[#1a2332] transition cursor-pointer group overflow-hidden">
+                                    <input type="file" name="image" id="imageInput"
+                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        onchange="previewImage(event)">
+
+                                    <div id="uploadPlaceholder" class="flex flex-col items-center">
+                                        <p class="text-sm font-bold text-blue-500 group-hover:text-blue-400">Ganti Foto
+                                        </p>
+                                        <p class="text-xs text-gray-500">Klik atau drag file baru</p>
+                                    </div>
+
+                                    <img id="imagePreview" src=""
+                                        class="hidden absolute inset-0 w-full h-full object-cover rounded-lg z-0 opacity-80">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function previewImage(event) {
+                        const input = event.target;
+                        if (input.files && input.files[0]) {
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const preview = document.getElementById('imagePreview');
+                                const placeholder = document.getElementById('uploadPlaceholder');
+
+                                preview.src = e.target.result;
+                                preview.classList.remove('hidden');
+                                placeholder.classList.add('opacity-0');
+                            }
+                            reader.readAsDataURL(input.files[0]);
+                        }
+                    }
+                </script>
+
+                <!-- Add Stock Card -->
+                <div class="bg-[#1f2937] rounded-xl shadow-xl border border-gray-700 p-6">
+                    <div class="flex items-center gap-2 mb-4 text-emerald-400">
+                        <i class="fa-solid fa-plus-circle text-lg"></i>
+                        <h3 class="text-lg font-bold text-white">Tambah Stok</h3>
+                    </div>
+
+                    <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-lg p-3 mb-4">
+                        <div class="text-xs text-emerald-200">
+                            Stok Saat Ini: <span class="font-bold text-white">{{ item.units|length }} Unit</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 text-xs font-bold mb-1 uppercase">Jumlah Unit Baru</label>
+                        <div class="flex items-center">
+                            <button type="button"
+                                onclick="const el=document.getElementById('add_qty'); if(el.value>0) el.stepDown()"
+                                class="bg-[#374151] px-3 py-2 rounded-l-lg border border-gray-600 border-r-0 text-white hover:bg-gray-600"><i
+                                    class="fa-solid fa-minus"></i></button>
+                            <input id="add_qty" name="add_quantity" type="number" min="0" value="0"
+                                class="w-full bg-[#111827] text-white border border-gray-600 px-3 py-2 text-center text-sm focus:outline-none focus:border-emerald-500 transition"
+                                placeholder="0">
+                            <button type="button" onclick="document.getElementById('add_qty').stepUp()"
+                                class="bg-[#374151] px-3 py-2 rounded-r-lg border border-gray-600 border-l-0 text-white hover:bg-gray-600"><i
+                                    class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-1">SN akan digenerate otomatis melanjutkan urutan
+                            terakhir.</p>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-blue-500/20 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-save"></i> Simpan Semua Perubahan
+                </button>
+                <a href="{{ url_for('items.items_list') }}"
+                    class="block text-center text-sm text-gray-400 hover:text-white transition">Batal & Kembali</a>
+
+            </div>
+
+            <!-- Right Column: Unit List & Status Management -->
+            <div class="lg:col-span-2">
+                <div
+                    class="bg-[#1f2937] rounded-xl shadow-xl border border-gray-700 flex flex-col h-full max-h-[800px]">
+                    <div class="p-6 border-b border-gray-700 flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-purple-400">
+                            <i class="fa-solid fa-list-check text-lg"></i>
+                            <h3 class="text-lg font-bold text-white">Manajemen Unit & Status</h3>
+                        </div>
+                        <div class="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">
+                            {{ item.units|length }} Unit Terdaftar
+                        </div>
+                    </div>
+
+                    <div class="overflow-y-auto flex-1 p-0">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-[#374151] text-xs uppercase font-medium text-gray-300 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-center w-12">No</th>
+                                    <th class="px-6 py-3">Serial Number</th>
+                                    <th class="px-6 py-3 text-center">QR Code</th>
+                                    <th class="px-6 py-3">Lokasi</th>
+                                    <th class="px-6 py-3">Status Terkini</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-700">
+                                {% for unit in item.units %}
+                                <tr class="hover:bg-gray-700/30 transition">
+                                    <td class="px-6 py-3 text-center text-xs text-gray-600">{{ loop.index }}</td>
+                                    <td class="px-6 py-3 font-mono text-white text-xs">
+                                        {{ unit.serial_number }}
+                                    </td>
+                                    <td class="px-6 py-3 text-center">
+                                        <div class="inline-block p-1 bg-white rounded-lg shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                                            onclick="showQR('{{ unit.serial_number }}', '{{ item.name }}')">
+                                            <img src="/qr/{{ unit.serial_number }}" class="w-10 h-10 min-w-[40px]"
+                                                alt="QR">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-3 text-xs">{{ unit.location or 'Gudang Utama' }}</td>
+                                    <td class="px-6 py-3">
+                                        <div class="relative w-40">
+                                            <select name="status_{{ unit.id }}" class="w-full text-xs rounded-lg px-2 py-1.5 appearance-none focus:outline-none cursor-pointer border border-transparent focus:border-blue-500 font-bold
+                                                {% if unit.status == 'Ready' %} bg-emerald-500/20 text-emerald-400
+                                                {% elif unit.status == 'Rented' %} bg-blue-500/20 text-blue-400
+                                                {% else %} bg-red-500/20 text-red-400 {% endif %}">
+                                                <option value="Ready" class="bg-gray-800 text-emerald-400" {{ 'selected'
+                                                    if unit.status=='Ready' }}>Ready</option>
+                                                <option value="Rented" class="bg-gray-800 text-blue-400" {{ 'selected'
+                                                    if unit.status=='Rented' }}>Rented</option>
+                                                <option value="Maintenance" class="bg-gray-800 text-red-400"
+                                                    {{ 'selected' if unit.status=='Maintenance' }}>Maintenance</option>
+                                            </select>
+                                            <i
+                                                class="fa-solid fa-caret-down absolute right-2 top-1/2 -translate-y-1/2 text-[10px] pointer-events-none opacity-50"></i>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">Belum ada unit.
+                                        Tambahkan stok di panel kiri.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    function showQR(sn, itemName) {
+        const qrUrl = `/qr/${sn}`;
+        Swal.fire({
+            title: `QR Code: ${sn}`,
+            text: itemName,
+            imageUrl: qrUrl,
+            imageWidth: 250,
+            imageHeight: 250,
+            imageAlt: sn,
+            background: '#1f2937',
+            color: '#ffffff',
+            confirmButtonColor: '#3b82f6',
+            confirmButtonText: 'Tutup',
+            showCloseButton: true,
+            customClass: {
+                popup: 'rounded-2xl border border-gray-700 shadow-2xl',
+                title: 'text-white font-bold',
+            }
+        });
+    }
+</script>
+{% endblock %}

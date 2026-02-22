@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RR Asset - Inventory Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0d1117', // Deeper Main BG
+                            800: '#161e2d', // Higher contrast Card BG
+                            700: '#30363d', // Border
+                        },
+                        brand: {
+                            blue: '#3b82f6',
+                            green: '#10b981',
+                            red: '#ef4444',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block styles %}{% endblock %}
+
+</head>
+
+<body class="flex h-screen overflow-hidden bg-[#0d1117] text-white">
+
+    <!-- MOBILE OVERLAY (Backdrop) -->
+    <div id="mobile-overlay" onclick="toggleSidebar()"
+        class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass transition-opacity opacity-0"></div>
+
+    <!-- 1. SIDEBAR -->
+    <aside id="sidebar"
+        class="fixed inset-y-0 left-0 w-64 bg-[#0d1117] flex flex-col shadow-2xl z-50 transform -translate-x-full md:translate-x-0 md:static md:shadow-lg transition-transform duration-300 ease-in-out border-r border-gray-800/50">
+        <!-- Logo -->
+        <div class="h-20 flex items-center justify-between px-6 border-b border-gray-700 shrink-0">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded bg-white/10 border border-white/20 flex items-center justify-center shadow-lg overflow-hidden p-1">
+                    <img src="{{ url_for('static', filename='img/logo_rr_led.png') }}"
+                        class="w-full h-full object-contain" alt="RR LED">
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-lg leading-none">RR Asset</h1>
+                    <span class="text-[10px] text-gray-500 font-mono">Ver 2.0</span>
+                </div>
+            </div>
+            <!-- Mobile Close Button -->
+            <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 py-6 space-y-1 overflow-y-auto custom-scrollbar">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.dashboard') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'main.dashboard' }}">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span class="text-sm">Dashboard</span>
+            </a>
+            <a href="{{ url_for('items.items_list') }}"
+                class="sidebar-link {{ 'active' if request.endpoint in ['items.items_list','items.add_item','items.add_unit','items.edit_item'] }}">
+                <i class="fa-solid fa-box"></i>
+                <span class="text-sm">Inventory</span>
+            </a>
+            <a href="{{ url_for('transactions.transaction_out') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'transactions.transaction_out' }}">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span class="text-sm">Barang Keluar</span>
+            </a>
+            <a href="{{ url_for('transactions.transaction_in') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'transactions.transaction_in' }}">
+                <i class="fa-solid fa-box-open"></i>
+                <span class="text-sm">Barang Masuk</span>
+            </a>
+            <div class="pt-6 pb-2 px-6">
+                <p class="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Analytics</p>
+            </div>
+            <a href="{{ url_for('reports.reports') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'reports.reports' }}">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span class="text-sm">Laporan</span>
+            </a>
+            <a href="{{ url_for('reports.activity_log') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'reports.activity_log' }}">
+                <i class="fa-solid fa-history"></i>
+                <span class="text-sm">Audit Log</span>
+            </a>
+            <a href="{{ url_for('bulk.bulk_home') }}"
+                class="sidebar-link {{ 'active' if request.endpoint == 'bulk.bulk_home' }}">
+                <i class="fa-solid fa-file-excel"></i>
+                <span class="text-sm">Bulk Item</span>
+            </a>
+            {% else %}
+            <div class="px-6 text-gray-500 text-sm">Please login first.</div>
+            {% endif %}
+        </nav>
+
+        <!-- Footer Actions -->
+        <div class="p-4 border-t border-gray-700 shrink-0">
+            <a href="{{ url_for('auth.logout') }}"
+                class="group flex items-center px-4 py-2 rounded-lg text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition">
+                <i
+                    class="fa-solid fa-arrow-right-from-bracket w-5 text-center group-hover:translate-x-1 transition-transform"></i>
+                <span class="ml-3 text-sm font-medium">Log Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- 2. MAIN CONTENT AREA -->
+    <div id="main-container" class="flex-1 flex flex-col h-full relative overflow-y-auto bg-[#111827] scroll-smooth">
+
+        <!-- Top Header -->
+        <header
+            class="h-16 md:h-20 bg-[#111827]/90 backdrop-blur-md flex items-center justify-between px-4 md:px-8 border-b border-gray-800 sticky top-0 z-30 transition-all">
+            <div class="flex items-center gap-4">
+                <!-- Hamburger Menu -->
+                <button onclick="toggleSidebar()"
+                    class="md:hidden text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+
+                <h2 class="text-xl md:text-2xl font-bold text-white truncate max-w-[200px] md:max-w-none">
+                    {% block header_title %}
+                    Dashboard
+                    {% endblock %}
+                </h2>
+            </div>
+
+            <div class="flex items-center gap-4 md:gap-6">
+                <!-- Search (Desktop) -->
+                {% block search_bar %}
+                <form action="{{ url_for('items.items_list') }}" method="GET" class="relative group flex-1 max-w-md">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i
+                            class="fa-solid fa-magnifying-glass text-gray-500 text-[10px] group-focus-within:text-blue-500 transition"></i>
+                    </span>
+                    <input type="text" name="search"
+                        class="bg-[#161e2d] text-[10px] md:text-xs rounded-xl pl-8 md:pl-9 pr-4 py-1.5 md:py-2 border border-gray-800 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/10 w-full md:w-64 transition-all md:focus:w-80 shadow-inner placeholder-gray-600"
+                        placeholder="Search assets..."
+                        value="{{ request.args.get('search', '') if request.endpoint == 'items.items_list' else '' }}">
+                    <div class="absolute inset-y-0 right-3 flex items-center hidden md:flex">
+                        <kbd
+                            class="text-[9px] font-black text-gray-600 border border-gray-800 px-1.5 py-0.5 rounded-md">/</kbd>
+                    </div>
+                </form>
+                {% endblock %}
+                <!-- Profile -->
+                <a href="{{ url_for('auth.profile') }}"
+                    class="flex items-center gap-3 pl-4 md:border-l border-gray-800 group cursor-pointer">
+                    <div class="text-right hidden md:block">
+                        <div class="text-sm font-bold text-white leading-tight group-hover:text-blue-400 transition">{{
+                            current_user.username }}</div>
+                        <div class="text-[10px] text-blue-400 font-mono uppercase tracking-wider">Administrator</div>
+                    </div>
+                    <div class="relative">
+                        <img class="h-9 w-9 md:h-10 md:w-10 rounded-full border-2 border-gray-700 group-hover:border-blue-500 transition shadow-lg group-hover:shadow-blue-500/20 object-cover"
+                            src="{{ url_for('static', filename='uploads/' + current_user.image_file) if current_user.image_file != 'default_user.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3b82f6&color=fff&bold=true' }}"
+                            alt="User">
+                        <span
+                            class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#111827] rounded-full"></span>
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <!-- Flash Messages via SweetAlert2 -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const flashMessages = [];
+                {% with messages = get_flashed_messages(with_categories = true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                flashMessages.push({
+                    category: {{ category| tojson | safe }},
+                message: {{ message| tojson | safe }}
+                });
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            flashMessages.forEach(msg => {
+                Swal.fire({
+                    icon: msg.category === 'error' ? 'error' : 'success',
+                    title: msg.category === 'error' ? 'Peringatan!' : 'Berhasil!',
+                    text: msg.message,
+                    background: '#1f2937',
+                    color: '#ffffff',
+                    confirmButtonColor: '#3b82f6',
+                    confirmButtonText: 'Tutup',
+                    customClass: {
+                        popup: 'rounded-2xl border border-gray-700 shadow-2xl',
+                        title: 'text-white font-bold',
+                        confirmButton: 'rounded-xl px-6 py-2.5 font-bold'
+                    }
+                });
+            });
+            });
+        </script>
+
+        <!-- Custom JS -->
+        <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+
+        <!-- Main Content Injection -->
+        <main class="px-4 md:px-8 pb-20 md:pb-10 flex-1 w-full max-w-[1600px] mx-auto">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</body>
+
+</html>

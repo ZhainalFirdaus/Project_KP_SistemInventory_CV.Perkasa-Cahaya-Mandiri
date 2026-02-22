@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RR Asset Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            blue: '#3b82f6',
+                            dark: '#0f172a', // Slate 900 custom
+                            card: '#1e293b', // Slate 800 custom
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-full bg-[#0f1115] text-white flex overflow-hidden">
+
+    <!-- LEFT SIDE: Image & Branding -->
+    <div
+        class="hidden md:flex relative w-1/2 bg-[#0a0c10] flex-col justify-between p-12 overflow-hidden border-r border-gray-800/50">
+        <!-- Background Image -->
+        <div class="absolute inset-0 z-0">
+            <!-- Blue Spotlight Aesthetic Image -->
+            <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2070&auto=format&fit=crop"
+                class="w-full h-full object-cover opacity-40 mix-blend-lighten scale-110" alt="Spotlight Background">
+
+            <!-- Custom Spotlight Glow Effect -->
+            <div class="absolute top-1/4 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px]"></div>
+            <div
+                class="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-[#0f1115] via-transparent to-transparent">
+            </div>
+        </div>
+
+        <!-- Top Logo -->
+        <div class="relative z-10 flex items-center gap-3">
+            <div
+                class="w-12 h-12 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl overflow-hidden p-1.5">
+                <img src="{{ url_for('static', filename='img/logo_rr_led.png') }}" class="w-full h-full object-contain"
+                    alt="RR LED Logo">
+            </div>
+            <span class="text-xl font-bold tracking-tight text-white">Inventory RR LED</span>
+        </div>
+
+        <!-- Bottom Text -->
+        <div class="relative z-10 max-w-lg mb-8">
+            <h1 class="text-5xl font-extrabold leading-[1.1] mb-6 text-white">Professional Equipment Management</h1>
+            <p class="text-gray-400 text-lg leading-relaxed font-medium">
+                Streamline your rental operations, track inventory, and manage client bookings efficiently with the
+                centralized dashboard.
+            </p>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Login Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[#0f1115] relative">
+
+        <!-- Login Card Container -->
+        <div class="w-full max-w-md space-y-8">
+
+            <!-- Header -->
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-2 mb-4">
+                    <img src="{{ url_for('static', filename='img/logo_rr_led.png') }}" class="w-12 h-12 object-contain"
+                        alt="RR LED">
+                    <div class="h-8 w-px bg-gray-700 mx-2 hidden md:block"></div>
+                    <div class="flex flex-col items-start">
+                        <span class="text-xs font-bold text-blue-500 uppercase tracking-widest">Admin Access</span>
+                        <h2 class="text-3xl font-bold text-white">Welcome Back</h2>
+                    </div>
+                </div>
+                <p class="text-gray-500">Enter your credentials to access the CV. Perkasa Cahaya Mandiri dashboard.</p>
+            </div>
+
+            <!-- Form -->
+            <form method="POST" action="" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <!-- Username -->
+                <div class="space-y-2">
+                    <label for="username" class="text-sm font-medium text-gray-300">Username or Email</label>
+                    <div class="relative">
+                        <input type="text" id="username" name="username" required
+                            class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                            placeholder="username">
+                        <i class="fa-solid fa-user absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="password" class="text-sm font-medium text-gray-300">Password</label>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required
+                            class="w-full bg-[#161b22] border border-gray-700 rounded-lg px-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                            placeholder="••••••••">
+                        <button type="button" onclick="togglePassword()"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+                            <i class="fa-solid fa-eye-slash" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- Submit Button -->
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    Login
+                </button>
+            </form>
+
+
+
+            <!-- Footer Small -->
+            <div class="text-center mt-12">
+                <p class="text-[10px] text-gray-600">© 2025 CV. Perkasa Cahaya Mandiri. All rights reserved.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        }
+
+        // SweetAlert2 untuk Flash Messages
+        document.addEventListener('DOMContentLoaded', function () {
+            {% with messages = get_flashed_messages(with_categories = true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+
+            let icon = 'success';
+            let title = 'Berhasil';
+
+            if ('{{ category }}' === 'error') {
+                icon = 'error';
+                title = 'Gagal';
+            } else if ('{{ category }}' === 'info' || '{{ category }}' === 'warning') {
+                icon = 'info';
+                title = 'Informasi';
+            }
+
+            Swal.fire({
+                icon: icon,
+                title: title,
+                text: '{{ message }}',
+                background: '#1e293b',
+                color: '#fff',
+                confirmButtonColor: '#3b82f6',
+                timer: 4000,
+                timerProgressBar: true
+            });
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        });
+    </script>
+</body>
+
+</html>

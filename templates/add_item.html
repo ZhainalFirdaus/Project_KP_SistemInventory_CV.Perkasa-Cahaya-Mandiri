@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block header_title %}
+<!-- Breadcrumb Custom Override -->
+<div class="flex flex-col">
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+        <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-home"></i></a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ url_for('items.items_list') }}">Inventory</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-white">Tambah Unit Baru</span>
+    </div>
+    <span class="text-2xl font-bold text-white">Form Tambah Unit Baru</span>
+    <span class="text-sm font-normal text-gray-400 mt-1">Isi detail lengkap di bawah ini untuk mendaftarkan alat baru ke
+        dalam sistem inventory gudang.</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-6">
+
+    <form method="POST" action="" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="bg-[#1f2937] rounded-xl shadow-xl border border-gray-700 p-8">
+
+            <!-- Section 1: Detail Utama -->
+            <div class="mb-8">
+                <div class="flex items-center gap-2 mb-4 text-blue-400">
+                    <i class="fa-solid fa-circle-info text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Detail Utama</h3>
+                </div>
+                <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nama Alat -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="name">
+                            Nama Alat <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition placeholder-gray-600"
+                            id="name" name="name" type="text" placeholder="Misal: Moving Head Beam 230" required
+                            minlength="3" list="existing_items_list" autocomplete="off">
+                        <datalist id="existing_items_list">
+                            {% for item_name, item_cat in existing_items %}
+                            <option value="{{ item_name }}" data-category="{{ item_cat }}">Existing - {{ item_cat }}
+                            </option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+
+                    <!-- Serial Number -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="serial_number">
+                            Serial Number <span class="text-xs font-normal text-gray-500">(Awal)</span> <span
+                                class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition placeholder-gray-600"
+                            id="serial_number" name="serial_number" type="text" placeholder="SN-001" required>
+                        <p class="text-xs text-gray-500 mt-1">Jika input banyak, ini akan jadi nomor urut pertama.</p>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="quantity">
+                            Jumlah Stok (Unit) <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-center">
+                            <button type="button" onclick="document.getElementById('quantity').stepDown()"
+                                class="bg-[#374151] px-3 py-3 rounded-l-lg border border-gray-600 border-r-0 text-white hover:bg-gray-600">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <input
+                                class="w-full bg-[#111827] text-white border border-gray-600 px-4 py-3 text-center focus:outline-none focus:border-blue-500 transition"
+                                id="quantity" name="quantity" type="number" min="1" value="1" required>
+                            <button type="button" onclick="document.getElementById('quantity').stepUp()"
+                                class="bg-[#374151] px-3 py-3 rounded-r-lg border border-gray-600 border-l-0 text-white hover:bg-gray-600">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Klasifikasi & Status -->
+            <div class="mb-8">
+                <div class="flex items-center gap-2 mb-4 text-blue-400">
+                    <i class="fa-solid fa-shapes text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Klasifikasi & Status</h3>
+                </div>
+                <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Kategori -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="category">
+                            Kategori <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="category" id="category"
+                                class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-blue-500 transition cursor-pointer"
+                                required onchange="updateSerialPrefix()">
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                <option value="Lighting">Lighting (Beams, Moving Heads, Par LEDs)</option>
+                                <option value="Audio">Audio (Line Arrays, Mixers, MICs)</option>
+                                <option value="Multimedia">Multimedia (LED Screen, Projectors)</option>
+                                <option value="Stage Production">Stage Production (Truss, Rigging, Booth)</option>
+                                <option value="Power Generator">Power Generator (Genset, UPS)</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down text-xs text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2" id="cat-hint">Prefix serial number akan otomatis
+                            disesuaikan.</p>
+                    </div>
+
+                    <!-- Status Awal -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="status">
+                            Status Awal <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="status" id="status"
+                                class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-blue-500 transition cursor-pointer">
+                                <option value="Ready" selected>Tersedia (Ready)</option>
+                                <option value="Maintenance">Maintenance / Rusak</option>
+                                <option value="Rented">Disewa (Keluar)</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down text-xs text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Script for Auto Prefix -->
+            <script>
+                function updateSerialPrefix() {
+                    const category = document.getElementById('category').value;
+                    const snInput = document.getElementById('serial_number');
+                    const hint = document.getElementById('cat-hint');
+
+                    let prefix = '';
+                    let info = '';
+
+                    // Prefix berdasarkan kategori RR
+                    if (category === 'Lighting') {
+                        prefix = 'LGT-';
+                        info = 'Prefix LGT untuk Lighting System';
+                    } else if (category === 'Audio') {
+                        prefix = 'AUD-';
+                        info = 'Prefix AUD untuk Audio System';
+                    } else if (category === 'Multimedia') {
+                        prefix = 'MUL-';
+                        info = 'Prefix MUL untuk Multimedia System';
+                    } else if (category === 'Stage Production') {
+                        prefix = 'STG-';
+                        info = 'Prefix STG untuk Stage Production';
+                    } else if (category === 'Power Generator') {
+                        prefix = 'PWR-';
+                        info = 'Prefix PWR untuk Power Generator';
+                    }
+
+                    // Generate nomor urut otomatis
+                    const currentVal = snInput.value;
+                    const allPrefixes = ['LGT-', 'AUD-', 'MUL-', 'STG-', 'PWR-', 'A-', 'B-', 'C-'];
+                    const hasPrefix = allPrefixes.some(p => currentVal.startsWith(p));
+
+                    if (!currentVal || hasPrefix || currentVal.length < 2) {
+                        const randomSuffix = String(Math.floor(100 + Math.random() * 900)).padStart(3, '0');
+                        snInput.value = prefix + randomSuffix;
+                    }
+
+                    if (hint) hint.textContent = info;
+                }
+            </script>
+
+
+            <!-- Section 3: Media & Keterangan -->
+            <div class="mb-8">
+                <div class="flex items-center gap-2 mb-4 text-blue-400">
+                    <i class="fa-regular fa-image text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Media & Keterangan</h3>
+                </div>
+                <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Upload Area (UI Only) -->
+                    <!-- (Content maintained until Section 3) -->
+
+                    <!-- (Skipped to Section 3 to save tokens in prompt, assuming I replace the specific block or use multi-edit) -->
+                    <!-- Actually, I need to replace the FORM start tag first. -->
+
+                    <!-- ... inside Section 3 ... -->
+                    <!-- Upload Area (Functional) -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Foto Alat</label>
+                        <div
+                            class="relative border-2 border-dashed border-gray-600 rounded-lg h-40 flex flex-col items-center justify-center text-center p-4 hover:border-blue-500 hover:bg-[#1a2332] transition cursor-pointer group overflow-hidden">
+
+                            <!-- Input File (Hidden but clickable via label/wrapper) -->
+                            <input type="file" name="image" id="imageInput"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                onchange="previewImage(event)">
+
+                            <!-- Placeholder UI -->
+                            <div id="uploadPlaceholder" class="flex flex-col items-center">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mb-2 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition">
+                                    <i class="fa-solid fa-cloud-arrow-up text-gray-400 group-hover:text-blue-400"></i>
+                                </div>
+                                <p class="text-sm font-bold text-blue-500 group-hover:text-blue-400">Klik upload
+                                    <span class="text-gray-400 font-normal">atau drag file</span>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">SVG, PNG, JPG (Max. 2MB)</p>
+                            </div>
+
+                            <!-- Image Preview -->
+                            <img id="imagePreview" src=""
+                                class="hidden absolute inset-0 w-full h-full object-cover rounded-lg z-0 opacity-80"
+                                alt="Preview">
+
+                            <!-- Change indicator -->
+                            <div id="changeIndicator"
+                                class="hidden absolute bottom-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-20 pointer-events-none">
+                                Ganti Foto
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function previewImage(event) {
+                            const input = event.target;
+                            if (input.files && input.files[0]) {
+                                const reader = new FileReader();
+                                reader.onload = function (e) {
+                                    const preview = document.getElementById('imagePreview');
+                                    const placeholder = document.getElementById('uploadPlaceholder');
+                                    const indicator = document.getElementById('changeIndicator');
+
+                                    preview.src = e.target.result;
+                                    preview.classList.remove('hidden');
+                                    placeholder.classList.add('hidden');
+                                    indicator.classList.remove('hidden');
+                                }
+                                reader.readAsDataURL(input.files[0]);
+                            }
+                        }
+                    </script>
+
+                    <!-- Deskripsi -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="description">Deskripsi /
+                            Keterangan Tambahan</label>
+                        <textarea
+                            class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 transition h-40 resize-none placeholder-gray-600"
+                            id="description" name="description"
+                            placeholder="Jelaskan kondisi fisik alat, kelengkapan kabel, hardcase, atau catatan penting lainnya..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-end gap-4 border-t border-gray-700 pt-6">
+                <a href="{{ url_for('items.items_list') }}"
+                    class="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white font-medium transition">
+                    Batal
+                </a>
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-blue-500/20 transition flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Simpan Unit
+                </button>
+            </div>
+
+        </div>
+    </form>
+</div>
+{% endblock %}

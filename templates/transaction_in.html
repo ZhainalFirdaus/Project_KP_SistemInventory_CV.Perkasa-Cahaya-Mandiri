@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block header_title %}Barang Masuk{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6 mt-6 pb-24">
+    <form method="POST" action="{{ url_for('transactions.transaction_in') }}" id="returnForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- 1. Top Filters Section -->
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <!-- Event & Location Inputs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative bg-[#1f2937] rounded-lg border border-gray-700">
+                    <input type="text" name="event_origin" id="event_origin" required minlength="3"
+                        class="w-full bg-transparent text-white px-4 py-3 rounded-lg focus:outline-none placeholder-gray-500"
+                        placeholder="Nama Event Asal (Misal: Gathering Corporate)">
+                    <i class="fa-regular fa-calendar absolute right-4 top-3.5 text-gray-500"></i>
+                </div>
+                <div class="relative bg-[#1f2937] rounded-lg border border-gray-700">
+                    <input type="text" name="location_origin" id="location_origin" required minlength="3"
+                        class="w-full bg-transparent text-white px-4 py-3 rounded-lg focus:outline-none placeholder-gray-500"
+                        placeholder="Lokasi Asal (Misal: Grand Ballroom)">
+                    <i class="fa-solid fa-location-dot absolute right-4 top-3.5 text-gray-500"></i>
+                </div>
+            </div>
+
+            <!-- 1.1 Active Events Suggestion (New) -->
+            {% if active_events %}
+            <div class="animate-fade-in">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Pilih dari Event Aktif (Sedang Disewa)
+                </p>
+                <div class="flex flex-wrap gap-3">
+                    {% for item in active_events %}
+                    <button type="button" onclick="selectActiveEvent('{{ item.event }}', '{{ item.location }}')"
+                        class="bg-[#1f2937] hover:bg-blue-600/20 border border-gray-700 hover:border-blue-500/50 px-4 py-2 rounded-xl text-left transition group shadow-lg">
+                        <div class="text-xs font-bold text-white group-hover:text-blue-400">{{ item.event }}</div>
+                        <div class="text-[10px] text-gray-500 group-hover:text-blue-300/70 flex items-center gap-1">
+                            <i class="fa-solid fa-location-dot text-[8px]"></i> {{ item.location }}
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Item Search & Date Picker Row -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Search -->
+                <div class="relative group flex-1">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
+                    </div>
+                    <select id="item-selector"
+                        class="w-full bg-[#1f2937] border border-gray-700 text-white text-lg rounded-xl pl-12 pr-10 py-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-lg appearance-none cursor-pointer">
+                        <option value="" disabled {{ 'selected' if not selected_item else '' }}>-- Cari Barang yang akan
+                            dikembalikan --</option>
+                        {% for item in items %}
+                        <option value="{{ item.id }}" {{ 'selected' if selected_item and selected_item.id==item.id
+                            else '' }}>
+                            {{ item.name }} (Select to Load Units)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- QR Scan Button -->
+                <button type="button" onclick="startScanner()"
+                    class="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-3 transition shadow-lg shadow-blue-600/20">
+                    <i class="fa-solid fa-qrcode text-xl"></i>
+                    <span class="hidden md:inline">Scan QR</span>
+                </button>
+
+                <!-- Date Picker (Right Side) -->
+                <div
+                    class="bg-[#1f2937] border border-gray-700 rounded-xl px-6 flex items-center gap-4 text-gray-300 shadow-lg min-w-[200px]">
+                    <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                        <i class="fa-regular fa-calendar text-xl"></i>
+                    </div>
+                    <div class="flex flex-col leading-tight">
+                        <span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">TANGGAL HARI
+                            INI</span>
+                        <span class="text-lg font-bold text-white">{{ now.strftime('%d %b %Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if selected_item %}
+        <!-- 2. Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- LEFT SPAN: Item Details -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Item Card -->
+                <div class="bg-[#1f2937] rounded-xl border border-gray-700 overflow-hidden shadow-lg sticky top-6">
+                    <!-- Image / Icon Area -->
+                    <div class="h-48 bg-gray-800 flex items-center justify-center relative group">
+                        {% if selected_item.image_file and selected_item.image_file != 'default.jpg' %}
+                        <!-- Real Image -->
+                        <img src="{{ url_for('static', filename='uploads/' + selected_item.image_file) }}"
+                            alt="{{ selected_item.name }}"
+                            class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        {% else %}
+                        <!-- Icon Fallback -->
+                        {% if selected_item.category == 'Lighting' %}
+                        <i
+                            class="fa-solid fa-lightbulb text-6xl text-gray-600 group-hover:text-amber-500 transition duration-300"></i>
+                        {% elif selected_item.category == 'Audio' %}
+                        <i
+                            class="fa-solid fa-music text-6xl text-gray-600 group-hover:text-purple-500 transition duration-300"></i>
+                        {% else %}
+                        <i
+                            class="fa-solid fa-tv text-6xl text-gray-600 group-hover:text-blue-500 transition duration-300"></i>
+                        {% endif %}
+                        {% endif %}
+
+                        <div class="absolute bottom-3 left-3">
+                            <span
+                                class="bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm border border-white/10">Category:
+                                {{ selected_item.category }}</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">{{ selected_item.name }}</h3>
+                        <p class="text-gray-400 text-sm mb-6">{{ selected_item.description or 'No Description' }}</p>
+
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-[#111827] rounded-lg p-3 border border-gray-700">
+                                <span class="block text-[10px] text-gray-500 uppercase font-bold tracking-wider">TOTAL
+                                    DIPINJAM</span>
+                                <span class="block text-2xl font-bold text-white">{{ rented_units|length }} <span
+                                        class="text-sm font-normal text-gray-500">Unit</span></span>
+                            </div>
+                            <div class="bg-[#064e3b]/30 rounded-lg p-3 border border-emerald-500/30">
+                                <span
+                                    class="block text-[10px] text-emerald-400 uppercase font-bold tracking-wider">SUDAH
+                                    MASUK</span>
+                                <span class="block text-2xl font-bold text-emerald-400" id="totalCheckedCount">0 <span
+                                        class="text-sm font-normal text-emerald-600">Unit</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="bg-[#111827] rounded-lg p-4 border border-gray-700">
+                            <p class="text-gray-400 text-xs font-bold mb-2">Progress Pengecekan</p>
+                            <div class="w-full bg-gray-700 h-2 rounded-full mb-2">
+                                <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" id="progressBar"
+                                    style="width: 0%"></div>
+                            </div>
+                            <div class="text-right text-xs text-gray-500 font-mono">
+                                <span id="checkedCount">0</span> / {{ rented_units|length }} Checked
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SPAN: Unit List -->
+            <div class="lg:col-span-8 text-white">
+                <div class="bg-[#1f2937] rounded-xl border border-gray-700 shadow-lg flex flex-col min-h-[500px]">
+                    <!-- Header -->
+                    <div
+                        class="p-5 border-b border-gray-700 flex justify-between items-center bg-[#1f2937] rounded-t-xl">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-blue-400"></i>
+                            <h3 class="font-bold text-white">Daftar Unit Kembali</h3>
+                        </div>
+                        <button type="button" onclick="markAllGood()"
+                            class="text-xs text-blue-400 hover:text-white font-bold transition">Mark All as
+                            Good</button>
+                    </div>
+
+                    <div class="table-responsive flex-1">
+
+                        <!-- Table Header -->
+                        <div
+                            class="grid grid-cols-12 gap-4 px-6 py-3 bg-[#111827] text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-700">
+                            <div class="col-span-1 text-center">Cek</div>
+                            <div class="col-span-3">Serial Number</div>
+                            <div class="col-span-3">Kondisi Saat Kembali</div>
+                            <div class="col-span-5">Catatan Tambahan</div>
+                        </div>
+
+                        <!-- List Area -->
+                        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                            {% for unit in rented_units %}
+                            <div class="grid grid-cols-12 gap-4 px-6 py-3 items-center rounded-lg bg-[#111827]/50 border border-gray-700/50 hover:border-gray-500 transition group unit-row"
+                                id="row_{{ unit.id }}">
+                                <!-- Checkbox -->
+                                <div class="col-span-1 flex justify-center">
+                                    <input type="checkbox" name="unit_ids" value="{{ unit.id }}"
+                                        class="w-5 h-5 rounded border-gray-600 text-emerald-500 bg-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-800 cursor-pointer unit-checkbox"
+                                        onchange="updateRowStyle(this)">
+                                </div>
+
+                                <!-- SN -->
+                                <div class="col-span-3">
+                                    <span class="font-mono text-white text-sm font-bold">{{ unit.serial_number }}</span>
+                                </div>
+
+                                <!-- Condition Dropdown -->
+                                <div class="col-span-3">
+                                    <div class="relative">
+                                        <select name="condition_{{ unit.id }}"
+                                            onchange="updateRowStyleBySelect(this, '{{ unit.id }}')"
+                                            class="w-full bg-[#374151] text-xs text-white border border-gray-600 rounded-lg px-2 py-2 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none condition-select">
+                                            <option value="Good" class="text-emerald-400 bg-gray-800">✅ Baik (Good)
+                                            </option>
+                                            <option value="Service" class="text-orange-400 bg-gray-800">⚠️ Perlu Servis
+                                            </option>
+                                            <option value="Broken" class="text-red-400 bg-gray-800">❌ Rusak (Broken)
+                                            </option>
+                                        </select>
+                                        <i
+                                            class="fa-solid fa-chevron-down absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] pointer-events-none"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Notes -->
+                                <div class="col-span-5">
+                                    <input type="text" name="note_{{ unit.id }}"
+                                        class="w-full bg-transparent text-sm text-gray-300 placeholder-gray-600 border-b border-gray-700 focus:border-blue-500 focus:outline-none py-1 transition note-input"
+                                        placeholder="Tambahkan catatan...">
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="p-12 text-center text-gray-500 flex flex-col items-center">
+                                <i class="fa-solid fa-clipboard-check text-4xl mb-4 opacity-30"></i>
+                                <p>Tidak ada unit yang sedang disewa untuk barang ini.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Warning Footer in Card -->
+                        <div class="bg-orange-900/20 border-t border-orange-500/20 p-4 rounded-b-xl flex gap-3">
+                            <i class="fa-solid fa-triangle-exclamation text-orange-400 mt-1"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-orange-400">Perhatian</h4>
+                                <p class="text-xs text-orange-200/70">Barang yang ditandai "Perlu Servis" atau "Rusak"
+                                    akan
+                                    otomatis masuk ke status Maintenance dan tidak tersedia untuk disewa.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- EMPTY STATE (When no item selected) -->
+            <div
+                class="flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-700/50 rounded-2xl bg-[#1f2937]/30 text-center">
+                <div class="bg-[#1f2937] p-6 rounded-full mb-6 border border-gray-700 shadow-xl relative group">
+                    <div class="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
+                    <i class="fa-solid fa-dolly text-5xl text-blue-400 relative z-10"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Pilih Barang Masuk</h3>
+                <p class="text-gray-400 max-w-md mx-auto mb-8">Pilih barang yang dikembalikan dari event menggunakan
+                    kolom
+                    pencarian di atas untuk mulai mendata unit.</p>
+
+                <div
+                    class="flex gap-2 text-xs text-gray-500 font-mono bg-[#111827] px-4 py-2 rounded-lg border border-gray-800">
+                    <span>Tips: Gunakan master data dropdown untuk nama yang akurat.</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 3. Floating Action Footer -->
+            {% if rented_units %}
+            <div
+                class="fixed bottom-0 left-0 right-0 bg-[#111827] border-t border-gray-700 py-4 px-8 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+
+                    <div class="flex items-center gap-8">
+                        <div>
+                            <span class="block text-[10px] text-gray-500 uppercase tracking-widest font-bold">UNIT
+                                TERIDENTIFIKASI</span>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-3xl font-bold text-white" id="footerTotal">0</span>
+                                <span class="text-sm text-gray-500">/ {{ rented_units|length }} Unit</span>
+                            </div>
+                        </div>
+                        <!-- Status Breakdown -->
+                        <div class="hidden md:block pl-8 border-l border-gray-700">
+                            <span
+                                class="block text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">STATUS
+                                KONDISI</span>
+                            <div class="flex gap-4 text-xs font-bold">
+                                <span class="text-emerald-400"><span id="countGood">0</span> Baik</span>
+                                <span class="text-orange-400"><span id="countService">0</span> Service</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <a href="{{ url_for('transactions.transaction_in') }}"
+                            class="px-6 py-3 rounded-lg border border-gray-600 text-gray-400 hover:text-white hover:bg-gray-700 font-bold transition text-sm">Batal</a>
+                        <button type="submit" id="submitBtn" disabled
+                            class="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition text-sm">
+                            <i class="fa-solid fa-box-archive"></i> Konfirmasi Barang Masuk
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
+
+    </form>
+</div>
+
+<!-- QR Scanner Modal -->
+<div id="qrModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-[#1f2937] border border-gray-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-camera text-blue-500"></i>
+                Scan Pengembalian
+            </h3>
+            <button onclick="stopScanner()" class="text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <div id="reader" style="width: 100%;" class="rounded-xl overflow-hidden border border-gray-700 bg-black">
+            </div>
+            <div id="scannerInfo" class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center">
+                <p class="text-sm text-blue-400">Scan QR Code pada unit untuk konfirmasi masuk</p>
+            </div>
+        </div>
+        <div class="p-6 bg-gray-800/50 flex justify-end">
+            <button onclick="stopScanner()"
+                class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- Scripts for Interactivity -->
+<script>
+    // 0. Auto-fill from Active Events
+    function selectActiveEvent(event, loc) {
+        document.getElementById('event_origin').value = event;
+        document.getElementById('location_origin').value = loc;
+
+        // Visual feedback
+        Swal.fire({
+            icon: 'success',
+            title: 'Event Dipilih',
+            text: `${event} @ ${loc}`,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    }
+    document.getElementById('item-selector').addEventListener('change', function () {
+        if (this.value) window.location.href = "{{ url_for('transactions.transaction_in') }}?item_id=" + this.value;
+    });
+
+    function updateRowStyle(checkbox) {
+        const row = document.getElementById('row_' + checkbox.value);
+        if (checkbox.checked) {
+            row.classList.add('bg-blue-900/20', 'border-blue-500/50');
+            row.classList.remove('bg-[#111827]/50', 'border-gray-700/50');
+        } else {
+            row.classList.remove('bg-blue-900/20', 'border-blue-500/50');
+            row.classList.add('bg-[#111827]/50', 'border-gray-700/50');
+        }
+        updateStats();
+    }
+
+    function updateRowStyleBySelect(select, id) {
+        const row = document.getElementById('row_' + id);
+        const noteInput = document.querySelector(`input[name="note_${id}"]`);
+
+        // Auto-check the box if user changes condition
+        const checkbox = document.querySelector(`input[value="${id}"]`);
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            updateRowStyle(checkbox);
+        }
+
+        if (select.value !== 'Good') {
+            // Service/Broken Style
+            select.classList.remove('text-emerald-400');
+            select.classList.add('text-orange-400', 'border-orange-500');
+            if (noteInput && !noteInput.value) {
+                noteInput.value = "Masalah teknis..."; // Placeholder suggestion
+            }
+        } else {
+            // Good Style
+            select.classList.remove('text-orange-400', 'border-orange-500');
+            select.classList.add('text-emerald-400');
+            if (noteInput && noteInput.value === "Masalah teknis...") {
+                noteInput.value = "";
+            }
+        }
+        updateStats();
+    }
+
+    function markAllGood() {
+        const checkboxes = document.querySelectorAll('.unit-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            updateRowStyle(cb);
+        });
+
+        // Reset all selects to Good
+        const selects = document.querySelectorAll('.condition-select');
+        selects.forEach(sel => {
+            sel.value = 'Good';
+            // Trigger style update
+            sel.classList.remove('text-orange-400', 'border-orange-500');
+            sel.classList.add('text-emerald-400');
+        });
+
+        updateStats();
+    }
+
+    function updateStats() {
+        const checkboxes = document.querySelectorAll('.unit-checkbox:checked');
+        const count = checkboxes.length;
+        const total = {{ rented_units| length if rented_units else 0
+    }};
+
+    // Footer Stats
+    document.getElementById('footerTotal').innerText = count;
+    document.getElementById('totalCheckedCount').innerText = count;
+    document.getElementById('checkedCount').innerText = count;
+
+    // Condition Breakdown
+    let good = 0;
+    let service = 0;
+
+    checkboxes.forEach(cb => {
+        const row = document.getElementById('row_' + cb.value);
+        const select = row.querySelector('select');
+        if (select.value === 'Good') good++;
+        else service++;
+    });
+
+    document.getElementById('countGood').innerText = good;
+    document.getElementById('countService').innerText = service;
+
+    // Progress Bar
+    const percent = total > 0 ? (count / total) * 100 : 0;
+    document.getElementById('progressBar').style.width = percent + '%';
+
+    // Enable Submit
+    document.getElementById('submitBtn').disabled = count === 0;
+
+    if (count === total && total > 0) {
+        document.getElementById('progressBar').classList.add('bg-emerald-500');
+        document.getElementById('progressBar').classList.remove('bg-blue-500');
+    } else {
+        document.getElementById('progressBar').classList.add('bg-blue-500');
+        document.getElementById('progressBar').classList.remove('bg-emerald-500');
+    }
+    }
+
+    // QR Scanner Logic
+    let html5QrCode;
+
+    function startScanner() {
+        document.getElementById('qrModal').classList.remove('hidden');
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+            processQRCode(decodedText);
+        }).catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'Gagal mengakses kamera.', 'error');
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('qrModal').classList.add('hidden');
+                html5QrCode = null;
+            }).catch(err => console.error(err));
+        } else {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+    }
+
+    function processQRCode(sn) {
+        // Pertama, coba cari di daftar yang sudah tampil
+        const rows = document.querySelectorAll('.unit-row');
+        let found = false;
+
+        rows.forEach(row => {
+            const snText = row.querySelector('.font-mono').innerText.trim();
+            if (snText === sn.trim()) {
+                const cb = row.querySelector('.unit-checkbox');
+                if (!cb.checked) {
+                    cb.checked = true;
+                    updateRowStyle(cb);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Unit Masuk',
+                        text: `SN: ${sn}`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Unit Sudah Dicek',
+                        text: `SN: ${sn}`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+                found = true;
+            }
+        });
+
+        // Jika tidak ditemukan di daftar yang tampil, cari via API
+        if (!found) {
+            fetch(`/transaction/api/lookup-unit/${encodeURIComponent(sn.trim())}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.found) {
+                        if (data.status === 'Rented') {
+                            // Redirect ke halaman dengan item yang benar
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Memuat Unit...',
+                                text: `Mengalihkan ke ${data.item_name}`,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            setTimeout(() => {
+                                window.location.href = `/transaction/in?item_id=${data.item_id}`;
+                            }, 1000);
+                        } else {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Unit Tidak Disewa',
+                                text: `SN ${sn} statusnya "${data.status}", bukan "Rented".`,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'SN Tidak Ditemukan',
+                            text: data.message,
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Gagal menghubungi server.',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                });
+        }
+    }
+</script>
+{% endblock %}

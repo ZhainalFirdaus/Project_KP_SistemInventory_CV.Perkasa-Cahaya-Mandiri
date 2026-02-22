@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block header_title %}Master Data Inventory{% endblock %}
+
+{% block search_bar %}
+<form action="{{ url_for('items.items_list') }}" method="GET" class="relative group flex-1 max-w-md">
+    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <i
+            class="fa-solid fa-magnifying-glass text-gray-500 text-[10px] group-focus-within:text-blue-500 transition"></i>
+    </span>
+    <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+        class="bg-[#161e2d] text-[10px] md:text-xs rounded-xl pl-8 md:pl-9 pr-4 py-1.5 md:py-2 border border-gray-800 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/10 w-full md:w-64 transition-all md:focus:w-80 shadow-inner placeholder-gray-600"
+        placeholder="Cari alat...">
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 mt-6">
+
+    <!-- 1. Top Filters Bar (Flexible) -->
+    <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#161e2d] px-5 py-3 rounded-xl border border-gray-800/50 shadow-sm no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+            <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Inventory List</h3>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('items.items_list') }}"
+                class="text-center px-2 py-1 text-[10px] font-black text-gray-500 hover:text-white transition uppercase tracking-wider">
+                Reset View
+            </a>
+            <a href="{{ url_for('items.add_item') }}"
+                class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-black text-[10px] flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition uppercase tracking-wider">
+                <i class="fa-solid fa-plus text-[8px]"></i> Tambah Master Data
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Data Table -->
+    <div class="bg-[#161e2d] rounded-2xl border border-gray-800/50 overflow-hidden shadow-lg">
+        <div class="table-responsive">
+            <table class="w-full text-left text-gray-400">
+                <thead
+                    class="bg-[#374151] text-gray-300 uppercase text-xs font-semibold tracking-wider border-b border-gray-700">
+                    <tr>
+                        <th class="px-6 py-4 text-center w-16">No</th>
+                        <th class="px-6 py-4 text-left">Nama Alat</th>
+                        <th class="px-6 py-4 text-center">Kategori</th>
+                        <th class="px-6 py-4 text-center">Serial Number</th>
+                        <th class="px-6 py-4 text-center">Unit</th>
+                        <th class="px-6 py-4 text-left">Status Terkini</th>
+                        <th class="px-6 py-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-700/50 transition duration-200 group">
+                        <td class="px-6 py-4 text-center text-gray-400 font-mono text-sm">{{ loop.index }}</td>
+
+                        <!-- Nama Alat -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-[#374151] flex items-center justify-center text-lg shadow-sm group-hover:bg-blue-600/20 group-hover:text-blue-400 transition">
+                                    {% if item.category == 'Lighting' %} <i class="fa-solid fa-lightbulb"></i>
+                                    {% elif item.category == 'Audio' %} <i class="fa-solid fa-music"></i>
+                                    {% elif item.category == 'Multimedia' %} <i class="fa-solid fa-tv"></i>
+                                    {% elif item.category == 'Stage Production' %} <i class="fa-solid fa-cubes"></i>
+                                    {% elif item.category == 'Power Generator' %} <i class="fa-solid fa-bolt"></i>
+                                    {% else %} <i class="fa-solid fa-box"></i> {% endif %}
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="font-bold text-white text-base">{{ item.name }}</div>
+                                    {% if item.description %}
+                                    <div class="text-[10px] text-gray-500 italic line-clamp-1">{{ item.description }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Kategori -->
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset
+                                {% if item.category == 'Lighting' %} bg-amber-500/10 text-amber-400 ring-amber-500/20
+                                {% elif item.category == 'Audio' %} bg-purple-500/10 text-purple-400 ring-purple-500/20
+                                {% elif item.category == 'Multimedia' %} bg-blue-500/10 text-blue-400 ring-blue-500/20
+                                {% elif item.category == 'Stage Production' %} bg-pink-500/10 text-pink-400 ring-pink-500/20
+                                {% elif item.category == 'Power Generator' %} bg-emerald-500/10 text-emerald-400 ring-emerald-500/20
+                                {% else %} bg-gray-500/10 text-gray-400 ring-gray-500/20 {% endif %}">
+                                {{ item.category }}
+                            </span>
+                        </td>
+
+
+                        <!-- Serial Number (Range/Preview) -->
+                        <td class="px-6 py-4 text-center">
+                            {% if item.units %}
+                            <div class="text-sm text-gray-400 font-mono cursor-help"
+                                title="{{ item.units|map(attribute='serial_number')|join(', ') }}">
+                                {% if item.units|length > 1 %}
+                                {{ item.units[0].serial_number }} ... {{ item.units[-1].serial_number }}
+                                {% else %}
+                                {{ item.units[0].serial_number }}
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-gray-600 italic">-</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Unit (Quantity) -->
+                        <td class="px-6 py-4 text-center">
+                            <span
+                                class="text-white font-bold text-lg border border-gray-600 px-3 py-1 rounded-lg bg-[#111827]">{{
+                                item.units|length }}</span>
+                        </td>
+
+                        <!-- Status Terkini (Summary) -->
+                        <td class="px-6 py-4">
+                            {% set ready = item.units|selectattr("status", "equalto", "Ready")|list|length %}
+                            {% set rented = item.units|selectattr("status", "equalto", "Rented")|list|length %}
+                            {% set maint = item.units|selectattr("status", "equalto", "Maintenance")|list|length %}
+
+                            <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                                {% if ready > 0 %} <span
+                                    class="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">{{
+                                    ready }} Ready</span> {% endif %}
+                                {% if rented > 0 %} <span
+                                    class="text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">{{
+                                    rented }} Keluar</span> {% endif %}
+                                {% if maint > 0 %} <span
+                                    class="text-red-400 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">{{
+                                    maint }} Rusak</span> {% endif %}
+                                {% if item.units|length == 0 %} <span class="text-gray-500">Stok Kosong</span> {% endif
+                                %}
+                            </div>
+                        </td>
+
+                        <!-- Aksi -->
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{{ url_for('items.edit_item', item_id=item.id) }}"
+                                    class="p-2 bg-gray-600/20 text-gray-400 hover:text-white hover:bg-blue-600 rounded-lg transition"
+                                    title="Edit Item Master">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <button type="button" data-id="{{ item.id }}" data-name="{{ item.name }}"
+                                    data-url="{{ url_for('items.delete_item', item_id=0) }}"
+                                    class="delete-item-btn p-2 bg-gray-600/20 text-gray-400 hover:text-white hover:bg-red-600 rounded-lg transition"
+                                    title="Hapus Barang">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center gap-3">
+                                <i class="fa-solid fa-box-open text-4xl text-gray-600"></i>
+                                <span class="text-lg">Belum ada data barang.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        <div
+            class="bg-[#1f2937] px-6 py-4 border-t border-gray-700 text-xs text-gray-500 flex flex-col md:flex-row justify-between items-center gap-4">
+            <span>Menampilkan {{ items|length }} dari {{ pagination.total }} item (Halaman {{ pagination.page }} dari {{
+                pagination.pages }})</span>
+
+            {% if pagination.pages > 1 %}
+            <div class="flex items-center gap-2">
+                <!-- Previous Button -->
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('items.items_list', page=pagination.prev_num, search=search, category=category, status=status) }}"
+                    class="px-3 py-1.5 bg-[#374151] border border-gray-600 rounded-lg hover:bg-blue-600 hover:border-blue-500 hover:text-white transition flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i> Previous
+                </a>
+                {% else %}
+                <span
+                    class="px-3 py-1.5 bg-[#111827] border border-gray-700 rounded-lg text-gray-600 cursor-not-allowed flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i> Previous
+                </span>
+                {% endif %}
+
+                <!-- Page Numbers -->
+                <div class="flex gap-1">
+                    {% for p in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                    {% if p %}
+                    {% if p == pagination.page %}
+                    <span class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold">{{ p }}</span>
+                    {% else %}
+                    <a href="{{ url_for('items.items_list', page=p, search=search, category=category, status=status) }}"
+                        class="px-3 py-1.5 bg-[#374151] border border-gray-600 rounded-lg hover:bg-blue-600 hover:border-blue-500 hover:text-white transition">{{
+                        p }}</a>
+                    {% endif %}
+                    {% else %}
+                    <span class="px-2 py-1.5 text-gray-500">...</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Next Button -->
+                {% if pagination.has_next %}
+                <a href="{{ url_for('items.items_list', page=pagination.next_num, search=search, category=category, status=status) }}"
+                    class="px-3 py-1.5 bg-[#374151] border border-gray-600 rounded-lg hover:bg-blue-600 hover:border-blue-500 hover:text-white transition flex items-center gap-1">
+                    Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </a>
+                {% else %}
+                <span
+                    class="px-3 py-1.5 bg-[#111827] border border-gray-700 rounded-lg text-gray-600 cursor-not-allowed flex items-center gap-1">
+                    Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Hidden Dynamic Delete Form -->
+<form id="delete-form" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+
+{% endblock %}

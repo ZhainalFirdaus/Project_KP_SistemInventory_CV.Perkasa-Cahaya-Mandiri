@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block header_title %}Barang Keluar{% endblock %}
+
+{% block content %}
+<div class="space-y-6 mt-6 pb-24">
+    <form method="POST" action="{{ url_for('transactions.transaction_out') }}" id="transactionForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- 1. Top Section: Event Details & Item Search -->
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <!-- Event & Location -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative bg-[#1f2937] rounded-lg border border-gray-700">
+                    <input type="text" name="event_name" required minlength="3"
+                        class="w-full bg-transparent text-white px-4 py-3 rounded-lg focus:outline-none placeholder-gray-500"
+                        placeholder="Nama Event (Misal: Konser Musik)">
+                    <i class="fa-regular fa-calendar absolute right-4 top-3.5 text-gray-500"></i>
+                </div>
+                <div class="relative bg-[#1f2937] rounded-lg border border-gray-700">
+                    <input type="text" name="location" required
+                        class="w-full bg-transparent text-white px-4 py-3 rounded-lg focus:outline-none placeholder-gray-500"
+                        placeholder="Lokasi (Misal: Hall A)">
+                    <i class="fa-solid fa-location-dot absolute right-4 top-3.5 text-gray-500"></i>
+                </div>
+            </div>
+
+            <!-- Item Search (Dropdown List) -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="relative group flex-1">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fa-solid fa-box-open text-blue-500"></i>
+                    </div>
+                    <select
+                        onchange="if(this.value) window.location.href='{{ url_for('transactions.transaction_out') }}?item_id=' + this.value"
+                        class="w-full bg-[#1f2937] border border-gray-700 text-white text-lg rounded-xl pl-12 pr-10 py-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-lg appearance-none cursor-pointer">
+                        <option value="" disabled {{ 'selected' if not selected_item else '' }}>-- Pilih Barang dari
+                            Master
+                            Data --</option>
+                        {% for item in items %}
+                        <option value="{{ item.id }}" {{ 'selected' if selected_item and selected_item.id==item.id
+                            else '' }}>
+                            {{ item.name }} ({{ item.category }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <i class="fa-solid fa-chevron-down text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- QR Scan Button -->
+                <button type="button" onclick="startScanner()"
+                    class="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-3 transition shadow-lg shadow-blue-600/20">
+                    <i class="fa-solid fa-qrcode text-xl"></i>
+                    <span class="hidden md:inline">Scan QR</span>
+                </button>
+            </div>
+        </div>
+
+        {% if selected_item %}
+        <!-- 2. Main Content: 2 Columns -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- LEFT COLUMN: Item Details & Quantity -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Item Card -->
+                <div class="bg-[#1f2937] rounded-xl border border-gray-700 overflow-hidden shadow-lg">
+                    <!-- Image / Icon Area -->
+                    <div class="h-48 bg-gray-800 flex items-center justify-center relative group">
+                        {% if selected_item.image_file and selected_item.image_file != 'default.jpg' %}
+                        <!-- Real Image -->
+                        <img src="{{ url_for('static', filename='uploads/' + selected_item.image_file) }}"
+                            alt="{{ selected_item.name }}"
+                            class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        {% else %}
+                        <!-- Icon Fallback -->
+                        {% if selected_item.category == 'Lighting' %}
+                        <i
+                            class="fa-solid fa-lightbulb text-6xl text-gray-600 group-hover:text-blue-500 transition duration-300"></i>
+                        {% elif selected_item.category == 'Audio' %}
+                        <i
+                            class="fa-solid fa-music text-6xl text-gray-600 group-hover:text-purple-500 transition duration-300"></i>
+                        {% else %}
+                        <i class="fa-solid fa-box text-6xl text-gray-600 transition duration-300"></i>
+                        {% endif %}
+                        {% endif %}
+
+                        <div class="absolute bottom-3 left-3">
+                            <span
+                                class="bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm border border-white/10">Category:
+                                {{ selected_item.category }}</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-white mb-2">{{ selected_item.name }}</h3>
+                        <p class="text-gray-400 text-sm mb-6 line-clamp-3">{{ selected_item.description or 'Tidak ada
+                            deskripsi tambahan.' }}</p>
+
+                        <!-- Mini Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-[#111827] rounded-lg p-3 border border-gray-700">
+                                <span class="block text-xs text-gray-500 uppercase font-bold">Total Stok</span>
+                                <span class="block text-xl font-bold text-white">{{ selected_item.units|length }}</span>
+                            </div>
+                            <div class="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                                <span class="block text-xs text-blue-400 uppercase font-bold">Available</span>
+                                <span class="block text-xl font-bold text-blue-400">{{ fifo_units|length }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Quantity Input -->
+                        <div class="pt-4 border-t border-gray-700">
+                            <label class="block text-sm font-bold text-white mb-3">Jumlah Dibutuhkan (Unit)</label>
+                            <div class="flex items-center bg-[#111827] rounded-lg border border-gray-600 p-1">
+                                <button type="button" onclick="adjustQty(-1)"
+                                    class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded transition"><i
+                                        class="fa-solid fa-minus"></i></button>
+                                <input type="number" id="qtyInput" value="0" min="0" max="{{ fifo_units|length }}"
+                                    class="flex-1 bg-transparent text-center text-white font-bold text-lg focus:outline-none appearance-none"
+                                    oninput="autoSelectUnits(this.value)">
+                                <button type="button" onclick="adjustQty(1)"
+                                    class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 rounded transition"><i
+                                        class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: FIFO Table -->
+            <div class="lg:col-span-8">
+                <div class="bg-[#1f2937] rounded-xl border border-gray-700 shadow-lg flex flex-col h-full">
+                    <!-- Header -->
+                    <div
+                        class="p-5 border-b border-gray-700 flex justify-between items-center bg-[#1f2937] rounded-t-xl">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-sparkles text-blue-400"></i>
+                            <h3 class="font-bold text-white">Rekomendasi Unit (FIFO)</h3>
+                        </div>
+                        <div class="text-xs text-gray-400 bg-[#374151] px-3 py-1 rounded">
+                            Sort by: <span class="text-white">Lama di Gudang (Oldest)</span>
+                        </div>
+                    </div>
+
+                    <!-- Table Header -->
+                    <div
+                        class="grid grid-cols-12 gap-4 px-6 py-3 bg-[#111827] text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-700">
+                        <div class="col-span-1 text-center">Select</div>
+                        <div class="col-span-4">Serial Number</div>
+                        <div class="col-span-3">In Warehouse</div>
+                        <div class="col-span-2">Condition</div>
+                        <div class="col-span-2 text-right">Status</div>
+                    </div>
+
+                    <!-- Scrollable List -->
+                    <div class="flex-1 overflow-y-auto max-h-[500px] p-2 space-y-1">
+                        {% for unit in fifo_units %}
+                        <!-- Determine Priority Visuals -->
+                        {% set days_in = ((now - unit.last_check_in).days) if unit.last_check_in else 0 %}
+                        {% set is_priority = loop.index <= 3 %} <label
+                            class="grid grid-cols-12 gap-4 px-4 py-4 items-center rounded-lg hover:bg-[#374151] transition cursor-pointer border border-transparent hover:border-blue-500/30 group unit-row">
+                            <!-- Checkbox -->
+                            <div class="col-span-1 flex justify-center">
+                                <input type="checkbox" name="unit_ids" value="{{ unit.id }}"
+                                    class="unit-checkbox w-5 h-5 rounded border-gray-600 text-blue-600 bg-gray-700 focus:ring-blue-500 focus:ring-offset-gray-800"
+                                    onchange="updateSummary()">
+                            </div>
+
+                            <!-- SN -->
+                            <div class="col-span-4">
+                                <div class="font-mono text-white font-medium">{{ unit.serial_number }}</div>
+                            </div>
+
+                            <!-- Time -->
+                            <div class="col-span-3">
+                                <div class="text-sm text-gray-200 font-bold">{{ days_in }} Days</div>
+                                {% if is_priority %}
+                                <span
+                                    class="text-[10px] bg-red-900/50 text-red-400 px-1.5 py-0.5 rounded border border-red-900/50">OLDEST</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Condition -->
+                            <div class="col-span-2 text-sm text-gray-400">Good</div>
+
+                            <!-- Status -->
+                            <div class="col-span-2 text-right">
+                                {% if is_priority %}
+                                <div class="inline-flex items-center gap-1 text-blue-400 text-xs font-bold">
+                                    <i class="fa-solid fa-circle-check"></i> PRIORITY
+                                </div>
+                                {% else %}
+                                <div class="text-xs text-gray-500">AVAILABLE</div>
+                                {% endif %}
+                            </div>
+                            </label>
+                            {% else %}
+                            <div class="p-8 text-center text-gray-500">
+                                <i class="fa-solid fa-box-open text-4xl mb-3 opacity-30"></i>
+                                <p>Tidak ada unit tersedia (Ready) untuk barang ini.</p>
+                            </div>
+                            {% endfor %}
+                    </div>
+
+                    <!-- Info Footer -->
+                    <div
+                        class="bg-blue-900/10 p-4 rounded-b-xl border-t border-gray-700 flex gap-3 text-sm text-blue-200">
+                        <i class="fa-solid fa-circle-info mt-0.5 text-blue-400"></i>
+                        <p class="opacity-80">
+                            <span class="font-bold text-blue-400">Sistem FIFO Aktif:</span>
+                            Unit yang ditandai dengan "Priority" telah berada di gudang lebih lama. Mohon utamakan unit
+                            ini untuk menjaga kesehatan aset (rotasi baterai/komponen).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty State Guide -->
+        <div
+            class="flex flex-col items-center justify-center p-20 border-2 border-dashed border-gray-700 rounded-xl text-gray-500">
+            <i class="fa-solid fa-magnifying-glass-arrow-right text-6xl mb-6 text-gray-600"></i>
+            <h3 class="text-xl font-bold text-gray-400 mb-2">Mulai Transaksi</h3>
+            <p>Silakan cari nama barang di kolom pencarian di atas untuk melihat stok dan rekomendasi FIFO.</p>
+        </div>
+        {% endif %}
+
+        <!-- 3. Floating Footer Action -->
+        {% if selected_item %}
+        <div class="fixed bottom-0 left-0 right-0 bg-[#111827]/90 backdrop-blur-md border-t border-gray-700 p-4 z-40 transform transition-transform duration-300"
+            id="actionFooter">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex gap-8">
+                    <div>
+                        <span class="block text-gray-500 text-xs uppercase">Total Unit Dipilih</span>
+                        <span class="block text-white text-2xl font-bold" id="totalSelected">0 Unit</span>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <a href="{{ url_for('transactions.transaction_out') }}"
+                        class="px-6 py-3 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 font-bold transition">Cancel</a>
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold shadow-lg shadow-blue-600/20 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-truck-ramp-box"></i> Keluarkan Barang
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </form>
+</div>
+
+<!-- QR Scanner Modal -->
+<div id="qrModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-[#1f2937] border border-gray-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-camera text-blue-500"></i>
+                Scan QR Code Unit
+            </h3>
+            <button onclick="stopScanner()" class="text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <div id="reader" style="width: 100%;" class="rounded-xl overflow-hidden border border-gray-700 bg-black">
+            </div>
+            <div id="scannerInfo" class="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center">
+                <p class="text-sm text-blue-400">Arahkan kamera ke QR Code unit alat</p>
+            </div>
+        </div>
+        <div class="p-6 bg-gray-800/50 flex justify-end">
+            <button onclick="stopScanner()"
+                class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold transition">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- SCRIPTS for Interaction -->
+<script>
+    // 1. Auto Select Units based on QTY Input
+    function autoSelectUnits(qty) {
+        const checkboxes = document.querySelectorAll('.unit-checkbox');
+        const count = parseInt(qty) || 0;
+
+        // Reset all
+        checkboxes.forEach(cb => cb.checked = false);
+
+        // Select top N
+        for (let i = 0; i < count && i < checkboxes.length; i++) {
+            checkboxes[i].checked = true;
+        }
+        updateSummary();
+    }
+
+    // 2. Adjust QTY with +/- buttons
+    function adjustQty(delta) {
+        const input = document.getElementById('qtyInput');
+        let val = parseInt(input.value) || 0;
+        const max = parseInt(input.max) || 100;
+
+        val += delta;
+        if (val < 0) val = 0;
+        if (val > max) val = max;
+
+        input.value = val;
+        autoSelectUnits(val);
+    }
+
+    // 3. Update Footer Summary based on manual checkbox clicks
+    function updateSummary() {
+        const selected = document.querySelectorAll('.unit-checkbox:checked').length;
+        document.getElementById('totalSelected').innerText = selected + " Unit";
+
+        // Also sync Qty input if user manually checks boxes
+        const qtyInput = document.getElementById('qtyInput');
+        if (qtyInput) qtyInput.value = selected;
+    }
+
+    // 4. QR Scanner Logic
+    let html5QrCode;
+
+    function startScanner() {
+        document.getElementById('qrModal').classList.remove('hidden');
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+            // Logic after scan
+            processQRCode(decodedText);
+        }).catch(err => {
+            console.error("Scanner Error:", err);
+            Swal.fire('Error', 'Gagal mengakses kamera.', 'error');
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('qrModal').classList.add('hidden');
+                html5QrCode = null;
+            }).catch(err => console.error(err));
+        } else {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+    }
+
+    function processQRCode(sn) {
+        // Look for unit row with this SN
+        const rows = document.querySelectorAll('.unit-row');
+        let found = false;
+
+        rows.forEach(row => {
+            const snText = row.querySelector('.font-mono').innerText.trim();
+            if (snText === sn.trim()) {
+                const cb = row.querySelector('.unit-checkbox');
+                if (!cb.checked) {
+                    cb.checked = true;
+                    updateSummary();
+
+                    // Visual feedback
+                    row.classList.add('bg-blue-600/20', 'border-blue-500');
+                    setTimeout(() => row.classList.remove('bg-blue-600/20', 'border-blue-500'), 1000);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Unit Berhasil Discan',
+                        text: `SN: ${sn}`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Unit Sudah Dipilih',
+                        text: `SN: ${sn}`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+                found = true;
+            }
+        });
+
+        if (!found) {
+            // Maybe it's a different item?
+            Swal.fire({
+                icon: 'warning',
+                title: 'SN Tidak Ditemukan',
+                text: `Unit dengan SN ${sn} tidak ada dalam daftar barang terpilih saat ini.`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+    }
+</script>
+{% endblock %}

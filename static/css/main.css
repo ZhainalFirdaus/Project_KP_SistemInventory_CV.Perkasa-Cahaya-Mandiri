@@ -1,0 +1,191 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0d1117;
+    /* Slate-950 equivalent for deeper blacks */
+    color: #ffffff;
+    /* pure white for max contrast */
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    margin: 4px 12px;
+    border-radius: 12px;
+    color: #94a3b8;
+    /* Slate-400 */
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-link i {
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-link:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.sidebar-link.active {
+    background-color: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Glassmorphism */
+.glass {
+    background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Typography Hierarchy */
+h1,
+.h1 {
+    font-weight: 900;
+    letter-spacing: -0.025em;
+}
+
+h2,
+.h2 {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+h3,
+.h3 {
+    font-weight: 700;
+}
+
+p,
+span {
+    font-weight: 400;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.font-black {
+    font-weight: 900;
+}
+
+/* GLOBAL PRINT RESET */
+@media print {
+
+    body,
+    html,
+    #main-container {
+        height: auto !important;
+        overflow: visible !important;
+        background-color: white !important;
+        color: black !important;
+    }
+
+    #sidebar,
+    header,
+    #mobile-overlay,
+    #flash-container {
+        display: none !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* RESPONSIVE UTILITIES */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none !important;
+    }
+
+    .card-mobile {
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+}
+
+/* SWEETALERT CUSTOM THEME */
+.swal2-popup {
+    background: #1f2937 !important;
+    border: 1px solid #374151 !important;
+    border-radius: 1.5rem !important;
+}
+
+.swal2-title {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+.swal2-html-container {
+    color: #9ca3af !important;
+}
+
+.swal2-confirm {
+    background: #3b82f6 !important;
+    border-radius: 12px !important;
+    padding: 12px 30px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3) !important;
+}
+
+.swal2-cancel {
+    background: #111827 !important;
+    border: 1px solid #374151 !important;
+    border-radius: 12px !important;
+    padding: 12px 30px !important;
+    font-weight: 700 !important;
+    color: #9ca3af !important;
+}
+
+.swal2-deny {
+    background: #ef4444 !important;
+    border-radius: 12px !important;
+    padding: 12px 30px !important;
+    font-weight: 700 !important;
+}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Tambah Unit Baru</h2>
+    <p class="text-gray-600 mb-6">Barang: <strong>{{ item.name }}</strong> ({{ item.category }})</p>
+
+    <form method="POST" action="">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="serial_number">Nomor Seri / Kode
+                Inventory</label>
+            <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="serial_number" name="serial_number" type="text" placeholder="Contoh: PL-54-001" required>
+            <p class="text-xs text-gray-500 mt-1">Harus unik untuk setiap unit.</p>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <a href="{{ url_for('items.items_list') }}" class="text-gray-600 hover:text-gray-800">Batal</a>
+            <button
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150"
+                type="submit">
+                Simpan Unit
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

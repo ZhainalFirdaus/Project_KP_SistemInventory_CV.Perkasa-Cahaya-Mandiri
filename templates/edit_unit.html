@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block header_title %}
+<div class="flex flex-col">
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+        <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-home"></i></a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ url_for('items.items_list') }}">Inventory</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-white">Edit Data</span>
+    </div>
+    <span class="text-2xl font-bold text-white">Edit: {{ unit.item.name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-6">
+    <form method="POST" action="">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="bg-[#1f2937] rounded-xl shadow-xl border border-gray-700 p-8">
+
+            <!-- Notice -->
+            <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-8 flex gap-3">
+                <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+                <div class="text-sm text-blue-200">
+                    <span class="font-bold">Info:</span> Anda sedang mengedit unit <span
+                        class="font-mono bg-black/30 px-1 rounded">{{ unit.serial_number }}</span>.
+                    Perubahan kategori akan memperbarui serial number seluruh stok unit sejenis.
+                </div>
+            </div>
+
+            <!-- Section 1: Data Utama -->
+            <div class="mb-8">
+                <div class="flex items-center gap-2 mb-4 text-blue-400">
+                    <i class="fa-solid fa-sliders text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Pengaturan Validasi</h3>
+                </div>
+                <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nama Alat (Read Only) -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">
+                            Nama Barang <span class="text-xs font-normal text-gray-500">(Read-only)</span>
+                        </label>
+                        <input
+                            class="w-full bg-[#111827] text-gray-500 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none cursor-not-allowed"
+                            type="text" value="{{ unit.item.name }}" readonly>
+                    </div>
+
+                    <!-- Kategori (Master) -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="category">
+                            Kategori (Master) <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="category" id="category"
+                                class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-blue-500 transition cursor-pointer"
+                                required>
+                                <option value="Lighting" {{ 'selected' if unit.item.category=='Lighting' }}>Lighting
+                                </option>
+                                <option value="Audio" {{ 'selected' if unit.item.category=='Audio' }}>Audio</option>
+                                <option value="Multimedia System" {{ 'selected' if
+                                    unit.item.category=='Multimedia System' }}>Multimedia System</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down text-xs text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <!-- Status (Unit) -->
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2" for="status">
+                            Status Unit Ini <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="status" id="status"
+                                class="w-full bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-blue-500 transition cursor-pointer">
+                                <option value="Ready" {{ 'selected' if unit.status=='Ready' }}>Tersedia (Ready)</option>
+                                <option value="Rented" {{ 'selected' if unit.status=='Rented' }}>Disewa (Keluar)
+                                </option>
+                                <option value="Maintenance" {{ 'selected' if unit.status=='Maintenance' }}>Maintenance /
+                                    Rusak</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down text-xs text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Tambah Stok (Merged) -->
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-4 text-emerald-400">
+                    <i class="fa-solid fa-plus-circle text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">Tambah Stok Tambahan (Optional)</h3>
+                </div>
+                <div class="h-px bg-gray-700 w-full mb-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-300 text-sm font-bold mb-2">Jumlah Stok Baru</label>
+                        <div class="flex items-center">
+                            <button type="button"
+                                onclick="const el=document.getElementById('add_qty'); if(el.value>0) el.stepDown()"
+                                class="bg-[#374151] px-3 py-3 rounded-l-lg border border-gray-600 border-r-0 text-white hover:bg-gray-600"><i
+                                    class="fa-solid fa-minus"></i></button>
+                            <input id="add_qty" name="add_quantity" type="number" min="0" value="0"
+                                class="w-full bg-[#111827] text-white border border-gray-600 px-4 py-3 text-center focus:outline-none focus:border-emerald-500 transition placeholder-gray-600"
+                                placeholder="0">
+                            <button type="button" onclick="document.getElementById('add_qty').stepUp()"
+                                class="bg-[#374151] px-3 py-3 rounded-r-lg border border-gray-600 border-l-0 text-white hover:bg-gray-600"><i
+                                    class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Biarkan 0 jika tidak ingin menambah stok.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-end gap-4 border-t border-gray-700 pt-6 mt-6">
+                <a href="{{ url_for('items.items_list') }}"
+                    class="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white font-medium transition">
+                    Batal
+                </a>
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-blue-500/20 transition flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

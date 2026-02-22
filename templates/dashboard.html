@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block header_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- 0. Critical Alerts (Low Stock) -->
+{% if low_stock_items %}
+<div class="mb-8 mt-4 animate-pulse">
+    <div class="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-white">Peringatan: Stok Menipis!</p>
+                <p class="text-xs text-gray-400">Beberapa item memiliki unit tersedia kurang dari 15%.</p>
+            </div>
+        </div>
+        <div class="flex -space-x-2">
+            {% for item in low_stock_items[:3] %}
+            <div class="group relative">
+                <div
+                    class="w-8 h-8 rounded-full bg-red-900 border-2 border-[#111827] flex items-center justify-center text-[10px] font-bold text-white cursor-help">
+                    {{ item.available }}
+                </div>
+                <div
+                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border border-gray-700">
+                    {{ item.name }}: {{ item.available }}/{{ item.total }}
+                </div>
+            </div>
+            {% endfor %}
+            {% if low_stock_items|length > 3 %}
+            <div
+                class="w-8 h-8 rounded-full bg-gray-800 border-2 border-[#111827] flex items-center justify-center text-[10px] font-bold text-gray-400">
+                +{{ low_stock_items|length - 3 }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 1. Stats Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-4">
+
+    <!-- Card: Alat Ready -->
+    <div
+        class="bg-[#161e2d] rounded-2xl p-6 relative overflow-hidden shadow-lg border border-gray-800/50 group hover:border-blue-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start mb-6 relative z-10">
+            <div>
+                <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Alat Ready</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <h3 class="text-4xl font-black text-white">{{ stats.ready }}</h3>
+                    <span class="text-xs font-bold text-gray-500">Unit</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-2 font-medium">Siap untuk disewakan</p>
+            </div>
+            <div
+                class="bg-green-500/10 text-green-400 text-[10px] font-black px-2.5 py-1 rounded-lg border border-green-500/20 shadow-sm">
+                {{ stats.readiness_percent }}% Avail
+            </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden mt-2 relative z-10">
+            <div id="ready-bar"
+                class="bg-green-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+                style="width: 0%;"></div>
+        </div>
+        <!-- Icon BG -->
+        <i
+            class="fa-solid fa-circle-check absolute -bottom-4 -right-4 text-8xl text-gray-800/20 group-hover:text-green-500/10 group-hover:scale-110 transition duration-700"></i>
+    </div>
+
+    <!-- Card: Di Lokasi Event (Active Rentals) -->
+    <div
+        class="bg-[#161e2d] rounded-2xl p-6 relative overflow-hidden shadow-lg border border-gray-800/50 group hover:border-blue-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start mb-6 relative z-10">
+            <div>
+                <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Di Lokasi Event</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <h3 class="text-4xl font-black text-white">{{ stats.rented }}</h3>
+                    <span class="text-xs font-bold text-gray-500">Unit</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-2 font-medium">Sedang digunakan klien</p>
+            </div>
+            <div
+                class="bg-blue-500/10 text-blue-400 text-[10px] font-black px-2.5 py-1 rounded-lg border border-blue-500/20 shadow-sm">
+                {{ stats.rented_percent }}% Actv
+            </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden mt-2 relative z-10">
+            <div id="rented-bar"
+                class="bg-blue-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                style="width: 0%;"></div>
+        </div>
+        <!-- Icon BG -->
+        <i
+            class="fa-solid fa-map-location-dot absolute -bottom-4 -right-4 text-8xl text-gray-800/20 group-hover:text-blue-500/10 group-hover:scale-110 transition duration-700"></i>
+    </div>
+
+    <!-- Card: Perlu Servis -->
+    <div
+        class="bg-[#161e2d] rounded-2xl p-6 relative overflow-hidden shadow-lg border border-gray-800/50 group hover:border-blue-500/30 transition-all duration-300">
+        <div class="flex justify-between items-start mb-6 relative z-10">
+            <div>
+                <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Perlu Servis</p>
+                <div class="flex items-baseline gap-2 mt-1">
+                    <h3 class="text-4xl font-black text-white">{{ stats.maintenance }}</h3>
+                    <span class="text-xs font-bold text-gray-500">Unit</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-2 font-medium">Dalam perbaikan / Rusak</p>
+            </div>
+            <div
+                class="bg-orange-500/10 text-orange-400 text-[10px] font-black px-2.5 py-1 rounded-lg border border-orange-500/20 shadow-sm">
+                {{ stats.maintenance_percent }}% Fix
+            </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden mt-2 relative z-10">
+            <div id="maintenance-bar"
+                class="bg-orange-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(249,115,22,0.3)]"
+                style="width: 0%;"></div>
+        </div>
+        <!-- Icon BG -->
+        <i
+            class="fa-solid fa-screwdriver-wrench absolute -bottom-4 -right-4 text-8xl text-gray-800/20 group-hover:text-orange-500/10 group-hover:scale-110 transition duration-700"></i>
+    </div>
+
+</div>
+
+<!-- 2. Bottom Section: Chart & List -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEft: Distribusi Aset (Donut Chart) -->
+    <div class="bg-[#161e2d] rounded-2xl p-6 shadow-lg border border-gray-800/50">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-black text-white tracking-tight">Distribusi Aset</h3>
+            <button class="text-gray-500 hover:text-white transition"><i class="fa-solid fa-ellipsis"></i></button>
+        </div>
+
+        <div class="relative h-64 w-full flex justify-center items-center">
+            <canvas id="assetChart"></canvas>
+            <!-- Center Text Overlay -->
+            <div class="absolute inset-0 flex flex-col justify-center items-center pointer-events-none">
+                <span class="text-4xl font-black text-white">{{ stats.total_units }}</span>
+                <span class="text-[10px] uppercase font-black tracking-widest text-gray-500 mt-1">Total Aset</span>
+            </div>
+        </div>
+
+        <!-- Legend (Generated dynamically or static) -->
+        <div class="mt-6 space-y-3">
+            <!-- Legend will be populated mostly by ChartJS logic or we can list typical ones -->
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span class="text-gray-300">Lighting</span>
+                </div>
+                <!-- Calculate Percentage roughly if needed or hide -->
+                <span class="text-white font-bold">{{ dist_data.get('Lighting', 0) }} Unit</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                    <span class="text-gray-300">Audio System</span>
+                </div>
+                <span class="text-white font-bold">{{ dist_data.get('Audio', 0) }} Unit</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-gray-300">Multimedia</span>
+                </div>
+                <span class="text-white font-bold">{{ dist_data.get('Multimedia', 0) }} Unit</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Event Mendatang / Active Rentals (Span 2 Cols) -->
+    <div class="col-span-1 lg:col-span-2 bg-[#161e2d] rounded-2xl p-6 shadow-lg border border-gray-800/50">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-black text-white tracking-tight">Status Aset di Lapangan</h3>
+            <a href="{{ url_for('reports.reports') }}"
+                class="text-blue-500 text-xs font-bold hover:text-blue-400 transition flex items-center gap-1">
+                Lihat Semua <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+
+        <div class="space-y-3">
+            {% for item in recent_transactions %}
+            <!-- Event Item -->
+            <div
+                class="flex items-center justify-between p-4 rounded-2xl bg-[#111827]/50 border border-gray-800/50 hover:border-blue-500/20 transition-all group">
+                <div class="flex items-center gap-4">
+                    <!-- Date Box -->
+                    <div
+                        class="bg-[#161e2d] border border-gray-800 rounded-xl p-2 text-center w-14 h-14 flex flex-col justify-center shadow-sm">
+                        <span class="text-[10px] text-gray-500 uppercase font-black tracking-tighter">{{
+                            item.timestamp.strftime('%b') }}</span>
+                        <span class="text-xl font-black text-white leading-none">{{ item.timestamp.strftime('%d')
+                            }}</span>
+                    </div>
+
+                    <!-- Info -->
+                    <div>
+                        <h4 class="text-white font-bold text-sm group-hover:text-blue-400 transition tracking-tight">{{
+                            item.notes or 'No Notes' }}</h4>
+                        <div class="flex items-center gap-2 mt-1">
+                            <i class="fa-solid fa-box text-blue-500/50 text-[10px]"></i>
+                            <span class="text-xs text-gray-500 font-medium">{{ item.unit.item.name }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tag -->
+                <div class="text-right">
+                    <span
+                        class="bg-[#1f2937]/50 text-gray-400 text-[10px] font-black px-3 py-1 rounded-lg border border-gray-800 uppercase tracking-widest">
+                        {{ item.type }}
+                    </span>
+                    <p class="text-[10px] text-gray-600 mt-1.5 font-mono">{{ item.unit.serial_number }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div
+                class="text-center py-12 text-gray-600 bg-[#111827]/30 rounded-2xl border border-dashed border-gray-800">
+                <i class="fa-solid fa-clipboard-list text-3xl mb-3 block opacity-20"></i>
+                <p class="text-sm">Tidak ada mutasi aset aktif saat ini.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+</div>
+
+<!-- 3. Advanced Analytics Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 pb-10">
+    <!-- Popular Assets -->
+    <div class="bg-[#161e2d] rounded-2xl p-6 shadow-lg border border-gray-800/50">
+        <h3 class="text-lg font-black text-white mb-8 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                <i class="fa-solid fa-fire text-sm"></i>
+            </div>
+            Aset Paling Diminati
+        </h3>
+        <div class="space-y-6">
+            {% for item in popular_items %}
+            <div class="flex items-center justify-between group">
+                <div class="flex items-center gap-4">
+                    <span class="text-[10px] font-black text-gray-600 w-4 tracking-tighter">0{{ loop.index }}</span>
+                    <span class="text-sm text-gray-300 font-bold group-hover:text-white transition">{{ item.name
+                        }}</span>
+                </div>
+                <div class="flex items-center gap-4 flex-1 mx-6">
+                    <div class="h-1.5 flex-1 bg-gray-800 rounded-full overflow-hidden">
+                        {% set max_rent = popular_items[0].rent_count if popular_items else 1 %}
+                        <div class="bg-gradient-to-r from-blue-600 to-blue-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                            style="width: {{ (item.rent_count / (max_rent if max_rent > 0 else 1) * 100)|round }}%">
+                        </div>
+                    </div>
+                    <span class="text-xs font-black text-blue-400 w-8 text-right">{{ item.rent_count }}x</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Maintenance Watchlist -->
+    <div class="bg-[#161e2d] rounded-2xl p-6 shadow-lg border border-gray-800/50">
+        <h3 class="text-lg font-black text-white mb-8 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <i class="fa-solid fa-screwdriver-wrench text-sm"></i>
+            </div>
+            Unit Perlu Perhatian
+        </h3>
+        <div class="space-y-3">
+            {% for m in maintenance_watch %}
+            <div
+                class="flex items-center justify-between p-4 rounded-2xl bg-[#111827]/50 border border-gray-800/50 hover:border-orange-500/20 transition-all group">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-500 group-hover:bg-orange-500/10 transition">
+                        <i class="fa-solid fa-tools text-sm"></i>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-300 font-bold block">{{ m.name }}</span>
+                        <span
+                            class="text-[10px] text-gray-500 font-medium uppercase tracking-widest mt-0.5 block">Update
+                            Status Perbaikan</span>
+                    </div>
+                </div>
+                <div
+                    class="bg-orange-500/10 text-orange-400 text-[10px] font-black px-3 py-1.5 rounded-lg border border-orange-500/20 group-hover:bg-orange-500/20 transition">
+                    {{ m.m_count }} UNIT
+                </div>
+            </div>
+            {% else %}
+            <div
+                class="text-center py-12 text-gray-600 bg-[#111827]/30 rounded-2xl border border-dashed border-gray-800">
+                <i class="fa-solid fa-circle-check text-3xl mb-3 block opacity-20 text-emerald-500"></i>
+                <p class="text-sm">Semua unit dalam kondisi prima.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Update Progress Bars with animation
+        setTimeout(() => {
+            document.getElementById('ready-bar').style.width = '{{ stats.readiness_percent }}%';
+            document.getElementById('rented-bar').style.width = '{{ stats.rented_percent }}%';
+            document.getElementById('maintenance-bar').style.width = '{{ stats.maintenance_percent }}%';
+        }, 100);
+
+        // Data from Flask
+        const rawData = JSON.parse('{{ dist_data | tojson | safe }}');
+        const labels = Object.keys(rawData);
+        const dataValues = Object.values(rawData);
+
+        // Colors mapping
+        const colorMap = {
+            'Lighting': '#3b82f6', // Blue
+            'Audio': '#a855f7',    // Purple
+            'Multimedia': '#10b981', // Emerald
+            'Rigging': '#f59e0b',    // Amber
+            'Other': '#64748b'
+        };
+        const bgColors = labels.map(l => colorMap[l] || '#94a3b8');
+
+        const ctx = document.getElementById('assetChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: bgColors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%', // Thinner ring
+                plugins: {
+                    legend: { display: false } // Custom legend
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

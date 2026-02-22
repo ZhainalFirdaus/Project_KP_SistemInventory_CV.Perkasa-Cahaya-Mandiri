@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block header_title %}
+<div class="flex flex-col">
+    <span class="text-sm font-normal text-gray-500 mb-1">Transaksi / Berhasil</span>
+    <span class="text-2xl font-bold text-white">Barang Berhasil Keluar</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-12 text-center">
+    <div class="bg-[#1f2937] p-10 rounded-2xl border border-gray-700 shadow-2xl">
+        <div
+            class="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fa-solid fa-check text-4xl"></i>
+        </div>
+
+        <h2 class="text-2xl font-bold text-white mb-2">Pemuatan Berhasil!</h2>
+        <p class="text-gray-400 mb-8">Berhasil memproses <strong>{{ count }} unit</strong> untuk event <strong>{{ event
+                }}</strong>.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="{{ url_for('transactions.export_surat_jalan', event=event, loc=loc) }}"
+                class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-blue-600/20">
+                <i class="fa-solid fa-file-pdf"></i> Cetak Surat Jalan (PDF)
+            </a>
+            <a href="{{ url_for('transactions.transaction_in') }}"
+                class="flex items-center justify-center gap-2 bg-[#374151] hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition">
+                <i class="fa-solid fa-arrow-right"></i> Masuk Gudang
+            </a>
+        </div>
+
+        <div class="mt-8 pt-8 border-t border-gray-700">
+            <a href="{{ url_for('transactions.transaction_out') }}"
+                class="text-sm text-gray-500 hover:text-blue-400 transition">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Buat Transaksi Keluar Lagi
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

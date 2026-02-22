@@ -1,0 +1,25 @@
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+instance/
+.env
+
+# Large files/Media
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Logs
+*.log
+
+# IDE stuff
+.vscode/
+.idea/
+.DS_Store
+
+# DB
+*.sqlite3
+dump.rdb
